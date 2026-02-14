@@ -20,14 +20,27 @@ RUN cd packages/dashboard && npm run build
 COPY packages/public-page/ ./packages/public-page/
 RUN cd packages/public-page && npm run build
 
+# Production-only install for server
+RUN mkdir /prod && cp packages/server/package.json /prod/ && \
+    cd /prod && npm install --omit=dev 2>/dev/null || true
+
 FROM node:20-alpine
 RUN apk add --no-cache openssl
 WORKDIR /app
 
+# Copy server build
 COPY --from=builder /app/packages/server/dist ./dist
 COPY --from=builder /app/packages/server/prisma ./prisma
 COPY --from=builder /app/packages/server/package.json ./package.json
+
+# Copy node_modules from root (has all workspace deps hoisted)
 COPY --from=builder /app/node_modules ./node_modules
+
+# Also copy shared build (server imports from it)
+COPY --from=builder /app/packages/shared/dist ./node_modules/@status-page/shared/dist
+COPY --from=builder /app/packages/shared/package.json ./node_modules/@status-page/shared/package.json
+
+# Copy frontend builds
 COPY --from=builder /app/packages/dashboard/dist ./public/dashboard
 COPY --from=builder /app/packages/public-page/dist ./public/status-page
 
