@@ -21,6 +21,7 @@ COPY packages/public-page/ ./packages/public-page/
 RUN cd packages/public-page && npm run build
 
 FROM node:20-alpine
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY --from=builder /app/packages/server/dist ./dist
