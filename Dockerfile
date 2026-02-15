@@ -39,4 +39,4 @@ COPY --from=builder /app/packages/public-page/dist ./public/status-page
 
 ENV NODE_ENV=production
 EXPOSE 3030
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node dist/index.js"]
