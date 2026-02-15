@@ -24,6 +24,7 @@ export default function OverviewPage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [subscriberCount, setSubscriberCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -45,6 +46,10 @@ export default function OverviewPage() {
           const d = sRes.value.data;
           const arr = Array.isArray(d) ? d : d.subscribers || d.data || [];
           setSubscriberCount(Array.isArray(arr) ? arr.length : d.total || 0);
+        }
+        // If all requests failed, show error
+        if (mRes.status === 'rejected' && iRes.status === 'rejected' && sRes.status === 'rejected') {
+          setError('Failed to load dashboard data. Please check your connection and try again.');
         }
       } finally {
         setLoading(false);
@@ -71,6 +76,20 @@ export default function OverviewPage() {
     return <div className="flex items-center justify-center h-64 text-slate-400">Loading...</div>;
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertTriangle size={32} className="mx-auto mb-2 text-red-400" />
+          <p className="text-red-400">{error}</p>
+          <button onClick={() => window.location.reload()} className="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Overview</h1>
@@ -78,7 +97,7 @@ export default function OverviewPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card icon={<MonitorIcon size={20} />} label="Monitors" value={`${monitors.length}`} sub={`${up} up · ${down} down · ${paused} paused`} color="indigo" />
-        <Card icon={<Activity size={20} />} label="Uptime" value={up > 0 ? `${Math.round((up / Math.max(monitors.length - paused, 1)) * 100)}%` : '—'} sub="Currently operational" color="green" />
+        <Card icon={<Activity size={20} />} label="Uptime" value={monitors.length - paused > 0 ? `${Math.round((up / (monitors.length - paused)) * 100)}%` : 'N/A'} sub={monitors.length - paused > 0 ? 'Currently operational' : 'All monitors paused'} color="green" />
         <Card icon={<AlertTriangle size={20} />} label="Active Incidents" value={`${activeIncidents}`} sub={activeIncidents === 0 ? 'All clear' : 'Needs attention'} color="red" />
         <Card icon={<Users size={20} />} label="Subscribers" value={`${subscriberCount}`} sub="Email subscribers" color="blue" />
       </div>

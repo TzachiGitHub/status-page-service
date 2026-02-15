@@ -55,6 +55,7 @@ export async function processCheckResult(
   await prisma.monitor.update({
     where: { id: monitorId },
     data: {
+      status: result.status,
       currentStatus: result.status,
       lastCheckedAt: new Date(),
     },

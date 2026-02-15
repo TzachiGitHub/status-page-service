@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Save, Plus, Trash2, Copy } from 'lucide-react';
 import { useDarkModeStore } from '../stores/darkModeStore';
 import api from '../lib/api';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useConfirm } from '../hooks/useConfirm';
 
 interface ApiKey {
   id: string;
@@ -39,6 +41,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loadingKeys, setLoadingKeys] = useState(true);
+  const [keyError, setKeyError] = useState<string | null>(null);
+  const { confirmState, confirm, cancelConfirm } = useConfirm();
 
   useEffect(() => {
     api.get('/settings').then((r) => {
@@ -52,13 +56,15 @@ export default function SettingsPage() {
     }).catch(() => {}).finally(() => setLoadingKeys(false));
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = async (fields?: Partial<StatusPageConfig>) => {
     setSaving(true);
     setSaved(false);
     try {
-      await api.patch('/settings', config);
+      await api.patch('/settings', fields || config);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -73,14 +79,20 @@ export default function SettingsPage() {
       if (key.key) setNewKey(key.key);
       setNewKeyName('');
     } catch {
-      alert('Failed to create API key');
+      setKeyError('Failed to create API key');
+      setTimeout(() => setKeyError(null), 3000);
     }
   };
 
   const handleRevokeKey = async (id: string) => {
-    if (!confirm('Revoke this API key?')) return;
-    await api.delete(`/api-keys/${id}`);
-    setApiKeys((prev) => prev.filter((k) => k.id !== id));
+    const ok = await confirm({ title: 'Revoke API Key', message: 'Are you sure you want to revoke this API key? This action cannot be undone.', confirmLabel: 'Revoke', variant: 'danger' });
+    if (!ok) return;
+    try {
+      await api.delete(`/api-keys/${id}`);
+      setApiKeys((prev) => prev.filter((k) => k.id !== id));
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Failed to revoke API key');
+    }
   };
 
   const inputCls = 'w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
@@ -110,7 +122,7 @@ export default function SettingsPage() {
           <label className="block text-xs text-slate-400 mb-1">History Days: {config.historyDays}</label>
           <input type="range" min="7" max="365" value={config.historyDays || 90} onChange={(e) => setConfig({ ...config, historyDays: Number(e.target.value) })} className="w-full" />
         </div>
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm disabled:opacity-50">
+        <button onClick={() => handleSave()} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm disabled:opacity-50">
           <Save size={14} /> {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save Settings'}
         </button>
       </div>
@@ -131,10 +143,10 @@ export default function SettingsPage() {
         <div className="text-sm text-slate-400 bg-slate-700/50 p-3 rounded">
           <p className="font-medium text-slate-300 mb-1">CNAME Setup:</p>
           <p>Create a CNAME record pointing your custom domain to your status page host:</p>
-          <code className="block mt-1 text-indigo-400">{config.customDomain || 'status.yourdomain.com'} CNAME statuspage.yourhost.com</code>
+          <code className="block mt-1 text-indigo-400">{config.customDomain || 'status.yourdomain.com'} CNAME {window.location.hostname}</code>
         </div>
-        <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm disabled:opacity-50">
-          <Save size={14} className="inline mr-1" /> Save
+        <button onClick={() => handleSave({ customDomain: config.customDomain })} disabled={saving} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm disabled:opacity-50">
+          <Save size={14} className="inline mr-1" /> Save Domain
         </button>
       </div>
 
@@ -176,6 +188,12 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      <ConfirmDialog {...confirmState} onCancel={cancelConfirm} />
+      {keyError && (
+        <div className="fixed bottom-4 right-4 z-[100] px-4 py-2 rounded shadow-lg text-sm text-white bg-red-600">
+          {keyError}
+        </div>
+      )}
     </div>
   );
 }
@@ -186,7 +204,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       <span className="text-sm">{label}</span>
       <div className="relative">
         <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only" />
-        <div className={`w-10 h-5 rounded-full transition ${checked ? 'bg-indigo-600' : 'bg-slate-600'}`} onClick={() => onChange(!checked)}>
+        <div className={`w-10 h-5 rounded-full transition ${checked ? 'bg-indigo-600' : 'bg-slate-600'}`}>
           <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
         </div>
       </div>

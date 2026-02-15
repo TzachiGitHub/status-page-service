@@ -5,7 +5,7 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, name: string, orgName: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -18,8 +18,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.setItem('token', token);
     set({ token, isAuthenticated: true });
   },
-  register: async (email, password, name) => {
-    const { data } = await api.post('/auth/register', { email, password, name });
+  register: async (email, password, name, orgName) => {
+    const { data } = await api.post('/auth/register', { email, password, name, orgName });
     const token = data.token || data.accessToken;
     if (token) {
       localStorage.setItem('token', token);
@@ -27,6 +27,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   logout: () => {
+    // Best-effort server-side logout
+    api.post('/auth/logout').catch(() => {});
     localStorage.removeItem('token');
     set({ token: null, isAuthenticated: false });
   },

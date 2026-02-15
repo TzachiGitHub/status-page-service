@@ -18,7 +18,9 @@ router.get('/:slug/incidents', asyncHandler(async (req, res) => {
 }));
 
 router.get('/:slug/uptime', asyncHandler(async (req, res) => {
-  const days = req.query.days ? Number(req.query.days) : 90;
+  let days = req.query.days ? Number(req.query.days) : 90;
+  if (isNaN(days) || days < 1) days = 1;
+  if (days > 365) days = 365;
   const result = await statusPageService.getPublicUptime(req.params.slug, days);
   res.json(result);
 }));

@@ -34,7 +34,7 @@ export default function MonitorModal({ monitor, onClose, onSaved }: Props) {
   const [expiryThreshold, setExpiryThreshold] = useState<string>(String(monitor?.config?.expiryThreshold || '30'));
   const [hostname, setHostname] = useState((monitor?.config?.hostname as string) || '');
   const [expectedIp, setExpectedIp] = useState((monitor?.config?.expectedIp as string) || '');
-  const [interval, setInterval] = useState(monitor?.interval || 60);
+  const [checkInterval, setCheckInterval] = useState(monitor?.interval || 60);
   const [regions, setRegions] = useState<string[]>(monitor?.regions || []);
   const [alertAfter, setAlertAfter] = useState<string>(String(monitor?.alertAfter || '3'));
   const [recoverAfter, setRecoverAfter] = useState<string>(String(monitor?.recoverAfter || '2'));
@@ -61,7 +61,17 @@ export default function MonitorModal({ monitor, onClose, onSaved }: Props) {
     try {
       const config: Record<string, unknown> = {};
       if (type === 'HTTP') {
-        Object.assign(config, { url, method, expectedStatus: Number(expectedStatus), keyword, headers: headers ? JSON.parse(headers) : undefined });
+        let parsedHeaders: Record<string, string> | undefined;
+        if (headers) {
+          try {
+            parsedHeaders = JSON.parse(headers);
+          } catch {
+            setError('Invalid JSON in Headers field');
+            setSaving(false);
+            return;
+          }
+        }
+        Object.assign(config, { url, method, expectedStatus: Number(expectedStatus), keyword, headers: parsedHeaders });
       } else if (type === 'TCP') {
         Object.assign(config, { host, port: Number(port) });
       } else if (type === 'PING') {
@@ -77,7 +87,7 @@ export default function MonitorModal({ monitor, onClose, onSaved }: Props) {
         url: type === 'HTTP' ? url : undefined,
         host: ['TCP', 'PING', 'SSL'].includes(type) ? host : undefined,
         port: type === 'TCP' ? Number(port) : undefined,
-        interval,
+        interval: checkInterval,
         regions,
         alertAfter: Number(alertAfter),
         recoverAfter: Number(recoverAfter),
@@ -178,8 +188,8 @@ export default function MonitorModal({ monitor, onClose, onSaved }: Props) {
             <label className={labelCls}>Check Interval</label>
             <div className="flex gap-2">
               {INTERVALS.map((i) => (
-                <button key={i.value} type="button" onClick={() => setInterval(i.value)}
-                  className={`px-3 py-1 rounded text-xs font-medium ${interval === i.value ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                <button key={i.value} type="button" onClick={() => setCheckInterval(i.value)}
+                  className={`px-3 py-1 rounded text-xs font-medium ${checkInterval === i.value ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
                 >{i.label}</button>
               ))}
             </div>

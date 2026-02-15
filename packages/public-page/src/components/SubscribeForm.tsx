@@ -12,7 +12,7 @@ export function SubscribeForm({ slug }: { slug: string }) {
     if (!email) return;
     setStatus('loading');
     try {
-      await axios.post('/api/subscribe', { email, slug });
+      await axios.post(`/api/subscribers/${slug}/subscribe`, { email });
       setStatus('success');
       setMessage('Subscribed! You will receive status updates.');
       setEmail('');

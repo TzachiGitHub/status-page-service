@@ -15,6 +15,7 @@ import IncidentDetailPage from './pages/IncidentDetailPage';
 import SubscribersPage from './pages/SubscribersPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
+import { Learn } from './pages/Learn';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -43,6 +44,7 @@ function App() {
                   <Route path="/subscribers" element={<SubscribersPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/learn" element={<Learn />} />
                 </Routes>
               </Layout>
             </ProtectedRoute>

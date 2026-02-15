@@ -66,7 +66,7 @@ export default function MonitorsPage() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-8 text-slate-400">No monitors found.</div>
       ) : (
-        <div className="bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-lg overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-700 text-left text-slate-400">

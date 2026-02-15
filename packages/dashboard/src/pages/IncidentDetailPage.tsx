@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Edit, CheckCircle } from 'lucide-react';
 import api from '../lib/api';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useConfirm } from '../hooks/useConfirm';
 import clsx from 'clsx';
 
 interface IncidentUpdate {
@@ -34,6 +36,7 @@ export default function IncidentDetailPage() {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editImpact, setEditImpact] = useState('');
+  const { confirmState, confirm, cancelConfirm } = useConfirm();
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -50,13 +53,18 @@ export default function IncidentDetailPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [pageError, setPageError] = useState('');
+
   const handleAddUpdate = async () => {
     if (!id || !updateMessage.trim()) return;
     setSubmitting(true);
+    setPageError('');
     try {
       await api.post(`/incidents/${id}/updates`, { status: updateStatus, message: updateMessage });
       setUpdateMessage('');
       await load();
+    } catch (err: unknown) {
+      setPageError((err as any)?.response?.data?.error || 'Failed to add update');
     } finally {
       setSubmitting(false);
     }
@@ -64,21 +72,35 @@ export default function IncidentDetailPage() {
 
   const handleResolve = async () => {
     if (!id) return;
-    await api.patch(`/incidents/${id}`, { status: 'resolved' });
-    await load();
+    try {
+      await api.patch(`/incidents/${id}`, { status: 'resolved' });
+      await load();
+    } catch (err: unknown) {
+      setPageError((err as any)?.response?.data?.error || 'Failed to resolve');
+    }
   };
 
   const handleDelete = async () => {
-    if (!id || !confirm('Delete this incident?')) return;
-    await api.delete(`/incidents/${id}`);
-    navigate('/incidents');
+    if (!id) return;
+    const ok = await confirm({ title: 'Delete Incident', message: 'Are you sure you want to delete this incident? This action cannot be undone.', confirmLabel: 'Delete', variant: 'danger' });
+    if (!ok) return;
+    try {
+      await api.delete(`/incidents/${id}`);
+      navigate('/incidents');
+    } catch (err: unknown) {
+      setPageError((err as any)?.response?.data?.error || 'Failed to delete');
+    }
   };
 
   const handleEditSave = async () => {
     if (!id) return;
-    await api.patch(`/incidents/${id}`, { title: editTitle, impact: editImpact });
-    setEditing(false);
-    await load();
+    try {
+      await api.patch(`/incidents/${id}`, { title: editTitle, impact: editImpact });
+      setEditing(false);
+      await load();
+    } catch (err: unknown) {
+      setPageError((err as any)?.response?.data?.error || 'Failed to save');
+    }
   };
 
   const statusColor = (s: string) => {
@@ -194,6 +216,7 @@ export default function IncidentDetailPage() {
           </div>
         )}
       </div>
+      <ConfirmDialog {...confirmState} onCancel={cancelConfirm} />
     </div>
   );
 }

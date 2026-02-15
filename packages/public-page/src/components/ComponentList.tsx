@@ -62,6 +62,14 @@ export function ComponentList({
   const uptimeMap = new Map(uptime.map((u) => [u.componentId, u]));
   const { groups, ungrouped } = groupComponents(components);
 
+  if (components.length === 0) {
+    return (
+      <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-sm">
+        No components configured yet.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {Object.entries(groups).map(([name, comps]) => (

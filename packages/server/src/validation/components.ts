@@ -5,7 +5,8 @@ export const CreateComponentSchema = z.object({
   description: z.string().optional(),
   status: z.enum(['OPERATIONAL', 'DEGRADED_PERFORMANCE', 'PARTIAL_OUTAGE', 'MAJOR_OUTAGE', 'UNDER_MAINTENANCE']).optional(),
   groupId: z.string().uuid().optional().nullable(),
-  order: z.number().int().optional(),
+  order: z.number().int().min(0).optional(),
+  showOnStatusPage: z.boolean().optional(),
 });
 
 export const UpdateComponentSchema = CreateComponentSchema.partial();
@@ -16,7 +17,7 @@ export const ReorderComponentsSchema = z.object({
 
 export const CreateComponentGroupSchema = z.object({
   name: z.string().min(1).max(255),
-  order: z.number().int().optional(),
+  order: z.number().int().min(0).optional(),
 });
 
 export const UpdateComponentGroupSchema = CreateComponentGroupSchema.partial();

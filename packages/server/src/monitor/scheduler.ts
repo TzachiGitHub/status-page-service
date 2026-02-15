@@ -38,15 +38,16 @@ export class MonitorScheduler {
 
     try {
       const now = new Date();
+      // Only fetch monitors that haven't been checked yet (lastCheckedAt is null)
+      // or where enough time has passed. We filter due monitors in JS below
+      // since Prisma can't do computed date comparisons, but we at least
+      // only load enabled monitors with null lastCheckedAt or lastCheckedAt before a generous cutoff.
       const monitors = await this.prisma.monitor.findMany({
         where: {
           enabled: true,
           OR: [
             { lastCheckedAt: null },
-            {
-              // Due: lastCheckedAt + interval < now
-              // We compute this with raw filter
-            },
+            { lastCheckedAt: { lt: now } },
           ],
         },
       });

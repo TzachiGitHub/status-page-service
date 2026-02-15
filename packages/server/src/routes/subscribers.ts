@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import * as subscriberService from '../services/subscriberService.js';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
+import { validatePagination } from '../middleware/pagination.js';
 import { SubscribeSchema } from '../validation/subscribers.js';
 
 const router = Router();
@@ -16,7 +17,7 @@ router.post('/:orgSlug/subscribe', validate(SubscribeSchema), asyncHandler(async
   const { default: prisma } = await import('../lib/prisma.js');
   const org = await prisma.organization.findUnique({ where: { slug: req.params.orgSlug } });
   if (!org) { res.status(404).json({ error: { code: 'RESOURCE_NOT_FOUND', message: 'Organization not found' } }); return; }
-  const result = await subscriberService.subscribe(req.body.email, org.id);
+  const result = await subscriberService.subscribe(req.body.email, org.id, req.body.type);
   res.status(201).json(result);
 }));
 
@@ -31,7 +32,7 @@ router.get('/unsubscribe/:token', asyncHandler(async (req, res) => {
 }));
 
 // Admin endpoints (auth required)
-router.get('/', authenticate, asyncHandler(async (req, res) => {
+router.get('/', authenticate, validatePagination, asyncHandler(async (req, res) => {
   const { page, limit } = req.query;
   const result = await subscriberService.list(req.user!.orgId, {
     page: page ? Number(page) : undefined,

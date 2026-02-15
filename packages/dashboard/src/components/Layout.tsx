@@ -10,6 +10,7 @@ import {
   Users,
   Bell,
   Settings,
+  BookOpen,
   LogOut,
   Sun,
   Moon,
@@ -26,6 +27,7 @@ const navItems = [
   { to: '/subscribers', icon: Users, label: 'Subscribers' },
   { to: '/notifications', icon: Bell, label: 'Notifications' },
   { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/learn', icon: BookOpen, label: 'Learn' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

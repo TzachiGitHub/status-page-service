@@ -2,9 +2,28 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
+import xss from 'xss';
 import prisma from '../lib/prisma.js';
 import { validate } from '../middleware/validate.js';
 import { authenticate } from '../middleware/auth.js';
+import { tokenBlacklist } from '../lib/tokenBlacklist.js';
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // max 10 attempts per window
+  message: { error: 'Too many login attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: { error: 'Too many registration attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const router = Router();
 
@@ -12,7 +31,7 @@ const registerSchema = z.object({
   orgName: z.string().min(1),
   name: z.string().min(1),
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 const loginSchema = z.object({
@@ -20,11 +39,19 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-function signToken(payload: { userId: string; orgId: string; role: string }): string {
-  return jwt.sign(payload, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required');
+  }
+  return secret;
 }
 
-router.post('/register', validate(registerSchema), async (req: Request, res: Response): Promise<void> => {
+function signToken(payload: { userId: string; orgId: string; role: string }): string {
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '1h' });
+}
+
+router.post('/register', registerLimiter, validate(registerSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const { orgName, name, email, password } = req.body;
 
@@ -57,11 +84,13 @@ router.post('/register', validate(registerSchema), async (req: Request, res: Res
       organization: { id: org.id, name: org.name, slug: org.slug },
     });
   } catch (err) {
-    res.status(500).json({ error: 'Registration failed', message: (err as Error).message });
+    console.error('Registration error:', err);
+    const message = (err as any)?.code === 'P2002' ? 'Organization name already taken' : 'Registration failed';
+    res.status(500).json({ error: message });
   }
 });
 
-router.post('/login', validate(loginSchema), async (req: Request, res: Response): Promise<void> => {
+router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
@@ -85,7 +114,8 @@ router.post('/login', validate(loginSchema), async (req: Request, res: Response)
       organization: { id: member.organization.id, name: member.organization.name, slug: member.organization.slug },
     });
   } catch (err) {
-    res.status(500).json({ error: 'Login failed', message: (err as Error).message });
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 
@@ -105,8 +135,17 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
       organization: { id: member.organization.id, name: member.organization.name, slug: member.organization.slug },
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch user', message: (err as Error).message });
+    console.error('Fetch user error:', err);
+    res.status(500).json({ error: 'Failed to fetch user' });
   }
+});
+
+router.post('/logout', authenticate, (req: Request, res: Response) => {
+  const token = req.headers.authorization?.slice(7);
+  if (token) {
+    tokenBlacklist.add(token);
+  }
+  res.json({ message: 'Logged out successfully' });
 });
 
 export default router;

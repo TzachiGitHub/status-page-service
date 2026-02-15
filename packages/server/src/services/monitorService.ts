@@ -1,12 +1,33 @@
 import prisma from '../lib/prisma.js';
 import { MonitorStatus } from '@prisma/client';
 
+const VALID_MONITOR_STATUSES = ['UP', 'DOWN', 'DEGRADED', 'UNKNOWN'];
+const VALID_MONITOR_TYPES = ['HTTP', 'TCP', 'PING', 'DNS', 'SSL', 'HEARTBEAT'];
+
+function validatePagination(page?: number, limit?: number): { page: number; limit: number } {
+  let p = page || 1;
+  let l = limit || 20;
+  if (isNaN(p) || p < 1) p = 1;
+  if (isNaN(l) || l < 1) l = 1;
+  if (l > 100) l = 100;
+  return { page: p, limit: l };
+}
+
 export async function list(orgId: string, filters: { page?: number; limit?: number; status?: string; type?: string } = {}) {
-  const page = filters.page || 1;
-  const limit = filters.limit || 20;
+  const { page, limit } = validatePagination(filters.page, filters.limit);
   const where: any = { orgId };
-  if (filters.status) where.status = filters.status;
-  if (filters.type) where.type = filters.type;
+  if (filters.status) {
+    if (!VALID_MONITOR_STATUSES.includes(filters.status)) {
+      throw Object.assign(new Error(`Invalid status filter. Must be one of: ${VALID_MONITOR_STATUSES.join(', ')}`), { statusCode: 400, code: 'INVALID_FILTER' });
+    }
+    where.status = filters.status;
+  }
+  if (filters.type) {
+    if (!VALID_MONITOR_TYPES.includes(filters.type)) {
+      throw Object.assign(new Error(`Invalid type filter. Must be one of: ${VALID_MONITOR_TYPES.join(', ')}`), { statusCode: 400, code: 'INVALID_FILTER' });
+    }
+    where.type = filters.type;
+  }
 
   const [monitors, total] = await Promise.all([
     prisma.monitor.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' }, include: { component: true } }),
@@ -22,6 +43,11 @@ export async function getById(id: string, orgId: string) {
 }
 
 export async function create(data: any, orgId: string) {
+  // BUG-017: Auto-generate heartbeatToken for HEARTBEAT monitors
+  if (data.type === 'HEARTBEAT' && !data.heartbeatToken) {
+    const { randomUUID } = await import('crypto');
+    data.heartbeatToken = randomUUID();
+  }
   const monitor = await prisma.monitor.create({ data: { ...data, orgId } });
   return { data: monitor };
 }
@@ -52,8 +78,7 @@ export async function resume(id: string, orgId: string) {
 
 export async function getChecks(id: string, orgId: string, pagination: { page?: number; limit?: number } = {}) {
   await ensureExists(id, orgId);
-  const page = pagination.page || 1;
-  const limit = pagination.limit || 50;
+  const { page, limit } = validatePagination(pagination.page, pagination.limit);
   const [checks, total] = await Promise.all([
     prisma.monitorCheck.findMany({ where: { monitorId: id }, skip: (page - 1) * limit, take: limit, orderBy: { checkedAt: 'desc' } }),
     prisma.monitorCheck.count({ where: { monitorId: id } }),

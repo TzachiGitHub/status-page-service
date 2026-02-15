@@ -6,7 +6,7 @@ export const UpdateStatusPageConfigSchema = z.object({
   logoUrl: z.string().url().optional().nullable(),
   faviconUrl: z.string().url().optional().nullable(),
   customDomain: z.string().optional().nullable(),
-  customCss: z.string().optional().nullable(),
+  customCss: z.string().max(50000, 'Custom CSS must be under 50KB').optional().nullable(),
   showUptime: z.boolean().optional(),
   showResponseTime: z.boolean().optional(),
 });

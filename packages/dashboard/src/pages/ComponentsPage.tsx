@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Edit, ChevronDown, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import api from '../lib/api';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useConfirm } from '../hooks/useConfirm';
 import clsx from 'clsx';
 
 interface Component {
@@ -48,6 +50,7 @@ export default function ComponentsPage() {
   const [formStatus, setFormStatus] = useState('operational');
   const [formGroupId, setFormGroupId] = useState('');
   const [saving, setSaving] = useState(false);
+  const { confirmState, confirm, cancelConfirm } = useConfirm();
 
   const load = async () => {
     try {
@@ -118,28 +121,43 @@ export default function ComponentsPage() {
       }
       setShowForm(null);
       await load();
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Save failed');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string, type: 'component' | 'group') => {
-    if (!confirm(`Delete this ${type}?`)) return;
-    await api.delete(`/${type === 'component' ? 'components' : 'component-groups'}/${id}`);
-    await load();
+    const ok = await confirm({ title: `Delete ${type}`, message: `Are you sure you want to delete this ${type}?`, confirmLabel: 'Delete', variant: 'danger' });
+    if (!ok) return;
+    try {
+      await api.delete(`/${type === 'component' ? 'components' : 'component-groups'}/${id}`);
+      await load();
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Delete failed');
+    }
   };
 
   const handleStatusChange = async (id: string, status: string) => {
-    await api.patch(`/components/${id}`, { status });
-    setComponents((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
+    try {
+      await api.patch(`/components/${id}`, { status });
+      setComponents((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Status update failed');
+    }
   };
 
   const moveComponent = async (id: string, direction: 'up' | 'down') => {
     const idx = components.findIndex((c) => c.id === id);
     if (idx < 0) return;
     const newOrder = direction === 'up' ? (components[idx].order || idx) - 1 : (components[idx].order || idx) + 1;
-    await api.patch(`/components/${id}`, { order: newOrder });
-    await load();
+    try {
+      await api.patch(`/components/${id}`, { order: newOrder });
+      await load();
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Reorder failed');
+    }
   };
 
   const ungrouped = components.filter((c) => !c.groupId);
@@ -228,6 +246,7 @@ export default function ComponentsPage() {
           </div>
         </div>
       )}
+      <ConfirmDialog {...confirmState} onCancel={cancelConfirm} />
     </div>
   );
 }

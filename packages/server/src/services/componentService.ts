@@ -15,6 +15,13 @@ export async function list(orgId: string) {
 }
 
 export async function create(data: any, orgId: string) {
+  const existing = await prisma.component.findFirst({ where: { orgId, name: data.name } });
+  if (existing) {
+    const err = new Error('A component with this name already exists in your organization') as Error & { statusCode: number; code: string };
+    err.statusCode = 409;
+    err.code = 'DUPLICATE_NAME';
+    throw err;
+  }
   const component = await prisma.component.create({ data: { ...data, orgId } });
   return { data: component };
 }
@@ -40,6 +47,16 @@ export async function remove(id: string, orgId: string) {
 }
 
 export async function reorder(ids: string[], orgId: string) {
+  // Validate all IDs exist in this org
+  const existing = await prisma.component.findMany({ where: { id: { in: ids }, orgId }, select: { id: true } });
+  const existingIds = new Set(existing.map((c: { id: string }) => c.id));
+  const missing = ids.filter((id) => !existingIds.has(id));
+  if (missing.length > 0) {
+    const err = new Error(`Components not found: ${missing.join(', ')}`) as Error & { statusCode: number; code: string };
+    err.statusCode = 400;
+    err.code = 'INVALID_IDS';
+    throw err;
+  }
   const updates = ids.map((id, index) =>
     prisma.component.updateMany({ where: { id, orgId }, data: { order: index } })
   );

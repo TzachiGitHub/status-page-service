@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Send } from 'lucide-react';
 import api from '../lib/api';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useConfirm } from '../hooks/useConfirm';
 import clsx from 'clsx';
 
 interface Channel {
@@ -21,6 +23,8 @@ export default function NotificationsPage() {
   const [formConfig, setFormConfig] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const { confirmState, confirm, cancelConfirm } = useConfirm();
 
   const load = async () => {
     try {
@@ -42,27 +46,39 @@ export default function NotificationsPage() {
       setFormName('');
       setFormConfig({});
       await load();
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Failed to create channel');
     } finally {
       setSaving(false);
     }
+  };
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
   const handleTest = async (id: string) => {
     setTesting(id);
     try {
       await api.post(`/notification-channels/${id}/test`);
-      alert('Test notification sent!');
+      showToast('Test notification sent!', 'success');
     } catch {
-      alert('Test failed');
+      showToast('Test failed', 'error');
     } finally {
       setTesting(null);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this channel?')) return;
-    await api.delete(`/notification-channels/${id}`);
-    setChannels((prev) => prev.filter((c) => c.id !== id));
+    const ok = await confirm({ title: 'Delete Channel', message: 'Are you sure you want to delete this notification channel?', confirmLabel: 'Delete', variant: 'danger' });
+    if (!ok) return;
+    try {
+      await api.delete(`/notification-channels/${id}`);
+      setChannels((prev) => prev.filter((c) => c.id !== id));
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Failed to delete channel');
+    }
   };
 
   const configFields = (type: string) => {
@@ -147,6 +163,12 @@ export default function NotificationsPage() {
               <button onClick={handleCreate} disabled={saving || !formName} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm disabled:opacity-50">{saving ? 'Creating...' : 'Create'}</button>
             </div>
           </div>
+        </div>
+      )}
+      <ConfirmDialog {...confirmState} onCancel={cancelConfirm} />
+      {toast && (
+        <div className={`fixed bottom-4 right-4 z-[100] px-4 py-2 rounded shadow-lg text-sm text-white ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+          {toast.message}
         </div>
       )}
     </div>

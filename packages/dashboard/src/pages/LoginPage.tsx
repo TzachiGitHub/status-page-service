@@ -18,7 +18,8 @@ export default function LoginPage() {
       await login(email, password);
       navigate('/');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Login failed';
+      const errData = (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data;
+      const msg = errData?.error || errData?.message || 'Login failed';
       setError(msg);
     } finally {
       setLoading(false);

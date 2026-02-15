@@ -5,6 +5,8 @@ import { Pause, Play, Trash2, Edit, ArrowLeft } from 'lucide-react';
 import api from '../lib/api';
 import { useMonitorStore, type Monitor } from '../stores/monitorStore';
 import MonitorModal from '../components/MonitorModal';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useConfirm } from '../hooks/useConfirm';
 import clsx from 'clsx';
 
 interface Check {
@@ -37,6 +39,7 @@ export default function MonitorDetailPage() {
   const [period, setPeriod] = useState<'24h' | '7d' | '30d'>('24h');
   const [editModal, setEditModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { confirmState, confirm, cancelConfirm } = useConfirm();
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -68,21 +71,35 @@ export default function MonitorDetailPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async () => {
-    if (!id || !confirm('Delete this monitor?')) return;
-    await deleteMonitor(id);
-    navigate('/monitors');
+    if (!id) return;
+    const ok = await confirm({ title: 'Delete Monitor', message: 'Are you sure you want to delete this monitor? This action cannot be undone.', confirmLabel: 'Delete', variant: 'danger' });
+    if (!ok) return;
+    try {
+      await deleteMonitor(id);
+      navigate('/monitors');
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Failed to delete monitor');
+    }
   };
 
   const handlePause = async () => {
     if (!id) return;
-    await pauseMonitor(id);
-    setMonitor((m) => m ? { ...m, status: 'PAUSED' } : m);
+    try {
+      await pauseMonitor(id);
+      setMonitor((m) => m ? { ...m, status: 'PAUSED' } : m);
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Failed to pause monitor');
+    }
   };
 
   const handleResume = async () => {
     if (!id) return;
-    await resumeMonitor(id);
-    setMonitor((m) => m ? { ...m, status: 'UP' } : m);
+    try {
+      await resumeMonitor(id);
+      setMonitor((m) => m ? { ...m, status: 'UP' } : m);
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Failed to resume monitor');
+    }
   };
 
   if (loading) return <div className="text-center py-8 text-slate-400">Loading...</div>;
@@ -206,6 +223,7 @@ export default function MonitorDetailPage() {
           onSaved={(m) => { setMonitor(m); setEditModal(false); }}
         />
       )}
+      <ConfirmDialog {...confirmState} onCancel={cancelConfirm} />
     </div>
   );
 }

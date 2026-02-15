@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/authStore';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
+  const [orgName, setOrgName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -16,7 +17,7 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      await register(email, password, name);
+      await register(email, password, name, orgName);
       navigate('/');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Registration failed';
@@ -33,7 +34,15 @@ export default function RegisterPage() {
         {error && <div className="text-red-400 text-sm bg-red-900/30 p-2 rounded">{error}</div>}
         <input
           type="text"
-          placeholder="Name"
+          placeholder="Organization Name"
+          value={orgName}
+          onChange={(e) => setOrgName(e.target.value)}
+          required
+          className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <input
+          type="text"
+          placeholder="Your Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required

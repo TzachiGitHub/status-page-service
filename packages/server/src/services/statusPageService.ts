@@ -30,7 +30,7 @@ export async function getPublicStatus(slug: string) {
   const org = await getOrgBySlug(slug);
   const [config, components, groups] = await Promise.all([
     prisma.statusPageConfig.findUnique({ where: { orgId: org.id } }),
-    prisma.component.findMany({ where: { orgId: org.id }, orderBy: { order: 'asc' }, include: { group: true } }),
+    prisma.component.findMany({ where: { orgId: org.id, showOnStatusPage: true }, orderBy: { order: 'asc' }, include: { group: true } }),
     prisma.componentGroup.findMany({ where: { orgId: org.id }, orderBy: { order: 'asc' } }),
   ]);
 
@@ -62,13 +62,13 @@ export async function getPublicIncidents(slug: string) {
 
 export async function getPublicUptime(slug: string, days: number = 90) {
   const org = await getOrgBySlug(slug);
-  const components = await prisma.component.findMany({ where: { orgId: org.id }, orderBy: { order: 'asc' } });
+  const components = await prisma.component.findMany({ where: { orgId: org.id, showOnStatusPage: true }, orderBy: { order: 'asc' } });
   const since = new Date(Date.now() - days * 86400000);
 
   const uptimeData = await Promise.all(
     components.map(async (component: any) => {
       const monitors = await prisma.monitor.findMany({ where: { componentId: component.id } });
-      if (monitors.length === 0) return { componentId: component.id, name: component.name, uptime: 100 };
+      if (monitors.length === 0) return { componentId: component.id, name: component.name, uptime: null, noData: true };
       const monitorIds = monitors.map((m: any) => m.id);
       const [total, up] = await Promise.all([
         prisma.monitorCheck.count({ where: { monitorId: { in: monitorIds }, checkedAt: { gte: since } } }),

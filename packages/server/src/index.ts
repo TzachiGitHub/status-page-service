@@ -16,6 +16,7 @@ import sseRoutes from './sse/routes.js';
 import { createHeartbeatRouter } from './routes/heartbeat.js';
 import { authenticate } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { sanitizeBody } from './middleware/sanitize.js';
 import prisma from './lib/prisma.js';
 
 // __dirname available natively in CJS
@@ -23,8 +24,13 @@ import prisma from './lib/prisma.js';
 const app = express();
 const PORT = parseInt(process.env.PORT || '3030', 10);
 
-app.use(cors());
-app.use(express.json());
+const allowedOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()) : [];
+app.use(cors({
+  origin: allowedOrigins.length > 0 ? allowedOrigins : undefined,
+  credentials: true,
+}));
+app.use(express.json({ limit: '1mb' }));
+app.use(sanitizeBody);
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -59,6 +65,11 @@ app.get('/status/*', (_req, res) => {
 
 // Serve dashboard (catch-all for non-API routes)
 app.use(express.static(path.join(__dirname, '../public/dashboard')));
+
+// JSON 404 handler for API routes (instead of Express default HTML)
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
 
 // Error handling for service errors (NotFoundError etc.)
 app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {

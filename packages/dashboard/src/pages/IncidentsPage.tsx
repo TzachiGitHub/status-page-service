@@ -61,8 +61,11 @@ export default function IncidentsPage() {
     return !!i.scheduledAt;
   });
 
+  const [error, setError] = useState('');
+
   const handleCreate = async () => {
     setSaving(true);
+    setError('');
     try {
       const { data } = await api.post('/incidents', {
         title,
@@ -73,6 +76,8 @@ export default function IncidentsPage() {
       });
       const incident = data.incident || data;
       navigate(`/incidents/${incident.id}`);
+    } catch (err: unknown) {
+      setError((err as any)?.response?.data?.error || 'Failed to create incident');
     } finally {
       setSaving(false);
     }
@@ -149,6 +154,7 @@ export default function IncidentsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreate(false)}>
           <div className="bg-slate-800 rounded-lg p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold">New Incident</h2>
+            {error && <div className="text-red-400 text-sm bg-red-900/30 p-2 rounded">{error}</div>}
             <div><label className="block text-xs text-slate-400 mb-1">Title</label><input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block text-xs text-slate-400 mb-1">Impact</label>

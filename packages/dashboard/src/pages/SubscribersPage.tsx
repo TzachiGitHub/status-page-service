@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import api from '../lib/api';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useConfirm } from '../hooks/useConfirm';
 
 interface Subscriber {
   id: string;
@@ -13,6 +15,7 @@ interface Subscriber {
 export default function SubscribersPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
+  const { confirmState, confirm, cancelConfirm } = useConfirm();
 
   useEffect(() => {
     api.get('/subscribers').then((r) => {
@@ -22,9 +25,14 @@ export default function SubscribersPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Remove this subscriber?')) return;
-    await api.delete(`/subscribers/${id}`);
-    setSubscribers((prev) => prev.filter((s) => s.id !== id));
+    const ok = await confirm({ title: 'Remove Subscriber', message: 'Are you sure you want to remove this subscriber?', confirmLabel: 'Remove', variant: 'danger' });
+    if (!ok) return;
+    try {
+      await api.delete(`/subscribers/${id}`);
+      setSubscribers((prev) => prev.filter((s) => s.id !== id));
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || 'Failed to remove subscriber');
+    }
   };
 
   if (loading) return <div className="text-center py-8 text-slate-400">Loading...</div>;
@@ -68,6 +76,7 @@ export default function SubscribersPage() {
           </table>
         </div>
       )}
+      <ConfirmDialog {...confirmState} onCancel={cancelConfirm} />
     </div>
   );
 }
