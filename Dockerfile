@@ -25,13 +25,11 @@ FROM node:20-alpine
 RUN apk add --no-cache openssl
 WORKDIR /app
 
-# tsup bundles everything — just need the output + prisma + node_modules for prisma client
+# Server build output + prisma + all node_modules for runtime deps
 COPY --from=builder /app/packages/server/dist ./dist
 COPY --from=builder /app/packages/server/prisma ./prisma
 COPY --from=builder /app/packages/server/package.json ./package.json
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules ./node_modules
 
 # Frontend builds
 COPY --from=builder /app/packages/dashboard/dist ./public/dashboard
