@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsup src/index.ts --format esm --out-dir dist --clean --sourcemap",
+    "build": "tsup src/index.ts --format cjs --out-dir dist --clean --sourcemap",
     "test": "vitest run"
   },
   "dependencies": {
@@ -32,5 +32,5 @@
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"
   },
-  "type": "module"
+  "type": "commonjs"
 }

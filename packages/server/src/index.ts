@@ -2,7 +2,6 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import monitorRoutes from './routes/monitors.js';
 import componentRoutes from './routes/components.js';
@@ -19,8 +18,7 @@ import { authenticate } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import prisma from './lib/prisma.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// __dirname available natively in CJS
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3030', 10);

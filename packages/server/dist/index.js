@@ -1,29 +1,77 @@
-import {
-  prisma_default
-} from "./chunk-FRMIHO6H.js";
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key2 of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key2) && key2 !== except)
+        __defProp(to, key2, { get: () => from[key2], enumerable: !(desc = __getOwnPropDesc(from, key2)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/lib/prisma.ts
+var prisma_exports = {};
+__export(prisma_exports, {
+  default: () => prisma_default
+});
+var import_client, prisma, prisma_default;
+var init_prisma = __esm({
+  "src/lib/prisma.ts"() {
+    "use strict";
+    import_client = require("@prisma/client");
+    prisma = new import_client.PrismaClient();
+    prisma_default = prisma;
+  }
+});
 
 // src/index.ts
-import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
+var index_exports = {};
+__export(index_exports, {
+  default: () => index_default
+});
+module.exports = __toCommonJS(index_exports);
+var import_config = require("dotenv/config");
+var import_express13 = __toESM(require("express"));
+var import_cors = __toESM(require("cors"));
+var import_path = __toESM(require("path"));
 
 // src/routes/auth.ts
-import { Router } from "express";
-import bcrypt from "bcryptjs";
-import jwt2 from "jsonwebtoken";
-import { z } from "zod";
+var import_express = require("express");
+var import_bcryptjs = __toESM(require("bcryptjs"));
+var import_jsonwebtoken2 = __toESM(require("jsonwebtoken"));
+var import_zod2 = require("zod");
+init_prisma();
 
 // src/middleware/validate.ts
-import { ZodError } from "zod";
+var import_zod = require("zod");
 function validate(schema) {
   return (req, res, next) => {
     try {
       req.body = schema.parse(req.body);
       next();
     } catch (err) {
-      if (err instanceof ZodError) {
+      if (err instanceof import_zod.ZodError) {
         res.status(400).json({
           error: "Validation failed",
           details: err.errors.map((e) => ({ path: e.path.join("."), message: e.message }))
@@ -36,7 +84,7 @@ function validate(schema) {
 }
 
 // src/middleware/auth.ts
-import jwt from "jsonwebtoken";
+var import_jsonwebtoken = __toESM(require("jsonwebtoken"));
 function authenticate(req, res, next) {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
@@ -45,7 +93,7 @@ function authenticate(req, res, next) {
   }
   const token = header.slice(7);
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || "secret");
+    const payload = import_jsonwebtoken.default.verify(token, process.env.JWT_SECRET || "secret");
     req.user = payload;
     next();
   } catch {
@@ -54,19 +102,19 @@ function authenticate(req, res, next) {
 }
 
 // src/routes/auth.ts
-var router = Router();
-var registerSchema = z.object({
-  orgName: z.string().min(1),
-  name: z.string().min(1),
-  email: z.string().email(),
-  password: z.string().min(6)
+var router = (0, import_express.Router)();
+var registerSchema = import_zod2.z.object({
+  orgName: import_zod2.z.string().min(1),
+  name: import_zod2.z.string().min(1),
+  email: import_zod2.z.string().email(),
+  password: import_zod2.z.string().min(6)
 });
-var loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1)
+var loginSchema = import_zod2.z.object({
+  email: import_zod2.z.string().email(),
+  password: import_zod2.z.string().min(1)
 });
 function signToken(payload) {
-  return jwt2.sign(payload, process.env.JWT_SECRET || "secret", { expiresIn: "7d" });
+  return import_jsonwebtoken2.default.sign(payload, process.env.JWT_SECRET || "secret", { expiresIn: "7d" });
 }
 router.post("/register", validate(registerSchema), async (req, res) => {
   try {
@@ -77,7 +125,7 @@ router.post("/register", validate(registerSchema), async (req, res) => {
       return;
     }
     const slug = orgName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await import_bcryptjs.default.hash(password, 10);
     const org = await prisma_default.organization.create({
       data: {
         name: orgName,
@@ -107,7 +155,7 @@ router.post("/login", validate(loginSchema), async (req, res) => {
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
-    const valid = await bcrypt.compare(password, member.password);
+    const valid = await import_bcryptjs.default.compare(password, member.password);
     if (!valid) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
@@ -143,10 +191,11 @@ router.get("/me", authenticate, async (req, res) => {
 var auth_default = router;
 
 // src/routes/monitors.ts
-import { Router as Router2 } from "express";
+var import_express2 = require("express");
 
 // src/services/monitorService.ts
-import { MonitorStatus } from "@prisma/client";
+init_prisma();
+var import_client2 = require("@prisma/client");
 async function list(orgId, filters = {}) {
   const page = filters.page || 1;
   const limit = filters.limit || 20;
@@ -205,7 +254,7 @@ async function getUptimeStats(id) {
     const since = new Date(Date.now() - days * 864e5);
     const [total, up] = await Promise.all([
       prisma_default.monitorCheck.count({ where: { monitorId: id, checkedAt: { gte: since } } }),
-      prisma_default.monitorCheck.count({ where: { monitorId: id, checkedAt: { gte: since }, status: MonitorStatus.UP } })
+      prisma_default.monitorCheck.count({ where: { monitorId: id, checkedAt: { gte: since }, status: import_client2.MonitorStatus.UP } })
     ]);
     stats[key2] = total > 0 ? Math.round(up / total * 1e4) / 100 : 100;
   }
@@ -232,23 +281,23 @@ async function ensureExists(id, orgId) {
 }
 
 // src/validation/monitors.ts
-import { z as z2 } from "zod";
-var CreateMonitorSchema = z2.object({
-  name: z2.string().min(1).max(255),
-  type: z2.enum(["HTTP", "TCP", "PING", "DNS", "SSL", "HEARTBEAT"]),
-  url: z2.string().optional(),
-  method: z2.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]).optional(),
-  interval: z2.number().int().min(10).max(3600).optional(),
-  timeout: z2.number().int().min(1).max(120).optional(),
-  componentId: z2.string().uuid().optional(),
-  headers: z2.record(z2.string(), z2.string()).optional(),
-  body: z2.string().optional(),
-  expectedStatus: z2.number().int().optional()
+var import_zod3 = require("zod");
+var CreateMonitorSchema = import_zod3.z.object({
+  name: import_zod3.z.string().min(1).max(255),
+  type: import_zod3.z.enum(["HTTP", "TCP", "PING", "DNS", "SSL", "HEARTBEAT"]),
+  url: import_zod3.z.string().optional(),
+  method: import_zod3.z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]).optional(),
+  interval: import_zod3.z.number().int().min(10).max(3600).optional(),
+  timeout: import_zod3.z.number().int().min(1).max(120).optional(),
+  componentId: import_zod3.z.string().uuid().optional(),
+  headers: import_zod3.z.record(import_zod3.z.string(), import_zod3.z.string()).optional(),
+  body: import_zod3.z.string().optional(),
+  expectedStatus: import_zod3.z.number().int().optional()
 });
 var UpdateMonitorSchema = CreateMonitorSchema.partial();
 
 // src/routes/monitors.ts
-var router2 = Router2();
+var router2 = (0, import_express2.Router)();
 function asyncHandler(fn) {
   return (req, res, next) => fn(req, res).catch(next);
 }
@@ -305,9 +354,10 @@ router2.get("/:id/response-times", asyncHandler(async (req, res) => {
 var monitors_default = router2;
 
 // src/routes/components.ts
-import { Router as Router3 } from "express";
+var import_express3 = require("express");
 
 // src/services/componentService.ts
+init_prisma();
 var NotFoundError2 = class extends Error {
   statusCode = 404;
   code = "RESOURCE_NOT_FOUND";
@@ -359,26 +409,26 @@ async function getStatusHistory(id, days = 30) {
 }
 
 // src/validation/components.ts
-import { z as z3 } from "zod";
-var CreateComponentSchema = z3.object({
-  name: z3.string().min(1).max(255),
-  description: z3.string().optional(),
-  status: z3.enum(["OPERATIONAL", "DEGRADED_PERFORMANCE", "PARTIAL_OUTAGE", "MAJOR_OUTAGE", "UNDER_MAINTENANCE"]).optional(),
-  groupId: z3.string().uuid().optional().nullable(),
-  order: z3.number().int().optional()
+var import_zod4 = require("zod");
+var CreateComponentSchema = import_zod4.z.object({
+  name: import_zod4.z.string().min(1).max(255),
+  description: import_zod4.z.string().optional(),
+  status: import_zod4.z.enum(["OPERATIONAL", "DEGRADED_PERFORMANCE", "PARTIAL_OUTAGE", "MAJOR_OUTAGE", "UNDER_MAINTENANCE"]).optional(),
+  groupId: import_zod4.z.string().uuid().optional().nullable(),
+  order: import_zod4.z.number().int().optional()
 });
 var UpdateComponentSchema = CreateComponentSchema.partial();
-var ReorderComponentsSchema = z3.object({
-  ids: z3.array(z3.string().uuid()).min(1)
+var ReorderComponentsSchema = import_zod4.z.object({
+  ids: import_zod4.z.array(import_zod4.z.string().uuid()).min(1)
 });
-var CreateComponentGroupSchema = z3.object({
-  name: z3.string().min(1).max(255),
-  order: z3.number().int().optional()
+var CreateComponentGroupSchema = import_zod4.z.object({
+  name: import_zod4.z.string().min(1).max(255),
+  order: import_zod4.z.number().int().optional()
 });
 var UpdateComponentGroupSchema = CreateComponentGroupSchema.partial();
 
 // src/routes/components.ts
-var router3 = Router3();
+var router3 = (0, import_express3.Router)();
 function asyncHandler2(fn) {
   return (req, res, next) => fn(req, res).catch(next);
 }
@@ -414,9 +464,10 @@ router3.get("/:id/history", asyncHandler2(async (req, res) => {
 var components_default = router3;
 
 // src/routes/componentGroups.ts
-import { Router as Router4 } from "express";
+var import_express4 = require("express");
 
 // src/services/componentGroupService.ts
+init_prisma();
 var NotFoundError3 = class extends Error {
   statusCode = 404;
   code = "RESOURCE_NOT_FOUND";
@@ -452,7 +503,7 @@ async function remove3(id, orgId) {
 }
 
 // src/routes/componentGroups.ts
-var router4 = Router4();
+var router4 = (0, import_express4.Router)();
 function asyncHandler3(fn) {
   return (req, res, next) => fn(req, res).catch(next);
 }
@@ -479,9 +530,10 @@ router4.delete("/:id", asyncHandler3(async (req, res) => {
 var componentGroups_default = router4;
 
 // src/routes/incidents.ts
-import { Router as Router5 } from "express";
+var import_express5 = require("express");
 
 // src/services/incidentService.ts
+init_prisma();
 var NotFoundError4 = class extends Error {
   statusCode = 404;
   code = "RESOURCE_NOT_FOUND";
@@ -556,27 +608,27 @@ async function addUpdate(incidentId, data, orgId) {
 }
 
 // src/validation/incidents.ts
-import { z as z4 } from "zod";
-var CreateIncidentSchema = z4.object({
-  title: z4.string().min(1).max(500),
-  status: z4.enum(["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]).optional(),
-  severity: z4.enum(["MINOR", "MAJOR", "CRITICAL"]).optional(),
-  message: z4.string().min(1),
-  componentIds: z4.array(z4.string().uuid()).optional(),
-  componentStatus: z4.enum(["OPERATIONAL", "DEGRADED_PERFORMANCE", "PARTIAL_OUTAGE", "MAJOR_OUTAGE", "UNDER_MAINTENANCE"]).optional()
+var import_zod5 = require("zod");
+var CreateIncidentSchema = import_zod5.z.object({
+  title: import_zod5.z.string().min(1).max(500),
+  status: import_zod5.z.enum(["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]).optional(),
+  severity: import_zod5.z.enum(["MINOR", "MAJOR", "CRITICAL"]).optional(),
+  message: import_zod5.z.string().min(1),
+  componentIds: import_zod5.z.array(import_zod5.z.string().uuid()).optional(),
+  componentStatus: import_zod5.z.enum(["OPERATIONAL", "DEGRADED_PERFORMANCE", "PARTIAL_OUTAGE", "MAJOR_OUTAGE", "UNDER_MAINTENANCE"]).optional()
 });
-var UpdateIncidentSchema = z4.object({
-  title: z4.string().min(1).max(500).optional(),
-  status: z4.enum(["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]).optional(),
-  severity: z4.enum(["MINOR", "MAJOR", "CRITICAL"]).optional()
+var UpdateIncidentSchema = import_zod5.z.object({
+  title: import_zod5.z.string().min(1).max(500).optional(),
+  status: import_zod5.z.enum(["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]).optional(),
+  severity: import_zod5.z.enum(["MINOR", "MAJOR", "CRITICAL"]).optional()
 });
-var AddIncidentUpdateSchema = z4.object({
-  status: z4.enum(["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]),
-  message: z4.string().min(1)
+var AddIncidentUpdateSchema = import_zod5.z.object({
+  status: import_zod5.z.enum(["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]),
+  message: import_zod5.z.string().min(1)
 });
 
 // src/routes/incidents.ts
-var router5 = Router5();
+var router5 = (0, import_express5.Router)();
 function asyncHandler4(fn) {
   return (req, res, next) => fn(req, res).catch(next);
 }
@@ -612,9 +664,10 @@ router5.post("/:id/updates", validate(AddIncidentUpdateSchema), asyncHandler4(as
 var incidents_default = router5;
 
 // src/routes/subscribers.ts
-import { Router as Router6 } from "express";
+var import_express6 = require("express");
 
 // src/services/subscriberService.ts
+init_prisma();
 var NotFoundError5 = class extends Error {
   statusCode = 404;
   code = "RESOURCE_NOT_FOUND";
@@ -654,20 +707,20 @@ async function remove5(id, orgId) {
 }
 
 // src/validation/subscribers.ts
-import { z as z5 } from "zod";
-var SubscribeSchema = z5.object({
-  email: z5.string().email(),
-  componentIds: z5.array(z5.string().uuid()).optional()
+var import_zod6 = require("zod");
+var SubscribeSchema = import_zod6.z.object({
+  email: import_zod6.z.string().email(),
+  componentIds: import_zod6.z.array(import_zod6.z.string().uuid()).optional()
 });
 
 // src/routes/subscribers.ts
-var router6 = Router6();
+var router6 = (0, import_express6.Router)();
 function asyncHandler5(fn) {
   return (req, res, next) => fn(req, res).catch(next);
 }
 router6.post("/:orgSlug/subscribe", validate(SubscribeSchema), asyncHandler5(async (req, res) => {
-  const { default: prisma } = await import("./prisma-6JXMTYFE.js");
-  const org = await prisma.organization.findUnique({ where: { slug: req.params.orgSlug } });
+  const { default: prisma2 } = await Promise.resolve().then(() => (init_prisma(), prisma_exports));
+  const org = await prisma2.organization.findUnique({ where: { slug: req.params.orgSlug } });
   if (!org) {
     res.status(404).json({ error: { code: "RESOURCE_NOT_FOUND", message: "Organization not found" } });
     return;
@@ -698,9 +751,10 @@ router6.delete("/:id", authenticate, asyncHandler5(async (req, res) => {
 var subscribers_default = router6;
 
 // src/routes/notificationChannels.ts
-import { Router as Router7 } from "express";
+var import_express7 = require("express");
 
 // src/services/notificationChannelService.ts
+init_prisma();
 var NotFoundError6 = class extends Error {
   statusCode = 404;
   code = "RESOURCE_NOT_FOUND";
@@ -737,17 +791,17 @@ async function test(id, orgId) {
 }
 
 // src/validation/notificationChannels.ts
-import { z as z6 } from "zod";
-var CreateNotificationChannelSchema = z6.object({
-  name: z6.string().min(1).max(255),
-  type: z6.enum(["EMAIL", "SLACK", "WEBHOOK", "SMS"]),
-  config: z6.record(z6.string(), z6.unknown()),
-  enabled: z6.boolean().optional()
+var import_zod7 = require("zod");
+var CreateNotificationChannelSchema = import_zod7.z.object({
+  name: import_zod7.z.string().min(1).max(255),
+  type: import_zod7.z.enum(["EMAIL", "SLACK", "WEBHOOK", "SMS"]),
+  config: import_zod7.z.record(import_zod7.z.string(), import_zod7.z.unknown()),
+  enabled: import_zod7.z.boolean().optional()
 });
 var UpdateNotificationChannelSchema = CreateNotificationChannelSchema.partial();
 
 // src/routes/notificationChannels.ts
-var router7 = Router7();
+var router7 = (0, import_express7.Router)();
 function asyncHandler6(fn) {
   return (req, res, next) => fn(req, res).catch(next);
 }
@@ -778,10 +832,11 @@ router7.post("/:id/test", asyncHandler6(async (req, res) => {
 var notificationChannels_default = router7;
 
 // src/routes/apiKeys.ts
-import { Router as Router8 } from "express";
+var import_express8 = require("express");
 
 // src/services/apiKeyService.ts
-import crypto from "crypto";
+init_prisma();
+var import_crypto = __toESM(require("crypto"));
 var NotFoundError7 = class extends Error {
   statusCode = 404;
   code = "RESOURCE_NOT_FOUND";
@@ -796,7 +851,7 @@ async function list7(orgId) {
   return { data: masked };
 }
 async function create6(data, orgId) {
-  const key2 = `sp_${crypto.randomBytes(32).toString("hex")}`;
+  const key2 = `sp_${import_crypto.default.randomBytes(32).toString("hex")}`;
   const apiKey = await prisma_default.apiKey.create({
     data: { name: data.name, key: key2, orgId, expiresAt: data.expiresAt ? new Date(data.expiresAt) : null }
   });
@@ -810,14 +865,14 @@ async function revoke(id, orgId) {
 }
 
 // src/validation/apiKeys.ts
-import { z as z7 } from "zod";
-var CreateApiKeySchema = z7.object({
-  name: z7.string().min(1).max(255),
-  expiresAt: z7.string().datetime().optional()
+var import_zod8 = require("zod");
+var CreateApiKeySchema = import_zod8.z.object({
+  name: import_zod8.z.string().min(1).max(255),
+  expiresAt: import_zod8.z.string().datetime().optional()
 });
 
 // src/routes/apiKeys.ts
-var router8 = Router8();
+var router8 = (0, import_express8.Router)();
 function asyncHandler7(fn) {
   return (req, res, next) => fn(req, res).catch(next);
 }
@@ -844,10 +899,11 @@ router8.delete("/:id", asyncHandler7(async (req, res) => {
 var apiKeys_default = router8;
 
 // src/routes/statusPage.ts
-import { Router as Router9 } from "express";
+var import_express9 = require("express");
 
 // src/services/statusPageService.ts
-import { MonitorStatus as MonitorStatus2 } from "@prisma/client";
+init_prisma();
+var import_client3 = require("@prisma/client");
 var NotFoundError8 = class extends Error {
   statusCode = 404;
   code = "RESOURCE_NOT_FOUND";
@@ -910,7 +966,7 @@ async function getPublicUptime(slug, days = 90) {
       const monitorIds = monitors.map((m) => m.id);
       const [total, up] = await Promise.all([
         prisma_default.monitorCheck.count({ where: { monitorId: { in: monitorIds }, checkedAt: { gte: since } } }),
-        prisma_default.monitorCheck.count({ where: { monitorId: { in: monitorIds }, checkedAt: { gte: since }, status: MonitorStatus2.UP } })
+        prisma_default.monitorCheck.count({ where: { monitorId: { in: monitorIds }, checkedAt: { gte: since }, status: import_client3.MonitorStatus.UP } })
       ]);
       return { componentId: component.id, name: component.name, uptime: total > 0 ? Math.round(up / total * 1e4) / 100 : 100 };
     })
@@ -935,20 +991,20 @@ async function getPublicMetrics(slug) {
 }
 
 // src/validation/statusPage.ts
-import { z as z8 } from "zod";
-var UpdateStatusPageConfigSchema = z8.object({
-  title: z8.string().min(1).max(255).optional(),
-  description: z8.string().optional(),
-  logoUrl: z8.string().url().optional().nullable(),
-  faviconUrl: z8.string().url().optional().nullable(),
-  customDomain: z8.string().optional().nullable(),
-  customCss: z8.string().optional().nullable(),
-  showUptime: z8.boolean().optional(),
-  showResponseTime: z8.boolean().optional()
+var import_zod9 = require("zod");
+var UpdateStatusPageConfigSchema = import_zod9.z.object({
+  title: import_zod9.z.string().min(1).max(255).optional(),
+  description: import_zod9.z.string().optional(),
+  logoUrl: import_zod9.z.string().url().optional().nullable(),
+  faviconUrl: import_zod9.z.string().url().optional().nullable(),
+  customDomain: import_zod9.z.string().optional().nullable(),
+  customCss: import_zod9.z.string().optional().nullable(),
+  showUptime: import_zod9.z.boolean().optional(),
+  showResponseTime: import_zod9.z.boolean().optional()
 });
 
 // src/routes/statusPage.ts
-var router9 = Router9();
+var router9 = (0, import_express9.Router)();
 function asyncHandler8(fn) {
   return (req, res, next) => fn(req, res).catch(next);
 }
@@ -963,8 +1019,8 @@ router9.patch("/config", authenticate, validate(UpdateStatusPageConfigSchema), a
 var statusPage_default = router9;
 
 // src/routes/public.ts
-import { Router as Router10 } from "express";
-var router10 = Router10();
+var import_express10 = require("express");
+var router10 = (0, import_express10.Router)();
 function asyncHandler9(fn) {
   return (req, res, next) => fn(req, res).catch(next);
 }
@@ -988,7 +1044,8 @@ router10.get("/:slug/metrics", asyncHandler9(async (req, res) => {
 var public_default = router10;
 
 // src/sse/routes.ts
-import { Router as Router11 } from "express";
+var import_express11 = require("express");
+init_prisma();
 
 // src/sse/manager.ts
 function key(orgId, type) {
@@ -1043,7 +1100,7 @@ data: ${JSON.stringify(event.data)}
 var sseManager = new SSEManager();
 
 // src/sse/routes.ts
-var router11 = Router11();
+var router11 = (0, import_express11.Router)();
 function setupSSE(res) {
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -1085,13 +1142,13 @@ router11.get("/api/public/:slug/sse", async (req, res) => {
 var routes_default = router11;
 
 // src/routes/heartbeat.ts
-import { Router as Router12 } from "express";
-function createHeartbeatRouter(prisma) {
-  const router12 = Router12();
+var import_express12 = require("express");
+function createHeartbeatRouter(prisma2) {
+  const router12 = (0, import_express12.Router)();
   async function handleHeartbeat(req, res) {
     const { token } = req.params;
     try {
-      const monitor = await prisma.monitor.findUnique({
+      const monitor = await prisma2.monitor.findUnique({
         where: { heartbeatToken: token }
       });
       if (!monitor) {
@@ -1101,11 +1158,11 @@ function createHeartbeatRouter(prisma) {
         return res.status(400).json({ error: "Monitor is not a heartbeat type" });
       }
       const now = /* @__PURE__ */ new Date();
-      await prisma.monitor.update({
+      await prisma2.monitor.update({
         where: { id: monitor.id },
         data: { lastCheckedAt: now, currentStatus: "UP" }
       });
-      await prisma.monitorCheck.create({
+      await prisma2.monitorCheck.create({
         data: {
           monitorId: monitor.id,
           status: "UP",
@@ -1134,12 +1191,11 @@ function errorHandler(err, _req, res, _next) {
 }
 
 // src/index.ts
-var __filename = fileURLToPath(import.meta.url);
-var __dirname = path.dirname(__filename);
-var app = express();
+init_prisma();
+var app = (0, import_express13.default)();
 var PORT = parseInt(process.env.PORT || "3030", 10);
-app.use(cors());
-app.use(express.json());
+app.use((0, import_cors.default)());
+app.use(import_express13.default.json());
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
 });
@@ -1155,14 +1211,14 @@ app.use("/api/status-page", statusPage_default);
 app.use("/api/public", public_default);
 app.use(routes_default);
 app.use("/api/heartbeat", createHeartbeatRouter(prisma_default));
-app.use("/status", express.static(path.join(__dirname, "../public/status-page")));
+app.use("/status", import_express13.default.static(import_path.default.join(__dirname, "../public/status-page")));
 app.get("/status/*", (_req, res) => {
-  const indexPath = path.join(__dirname, "../public/status-page/index.html");
+  const indexPath = import_path.default.join(__dirname, "../public/status-page/index.html");
   res.sendFile(indexPath, (err) => {
     if (err) res.status(404).end();
   });
 });
-app.use(express.static(path.join(__dirname, "../public/dashboard")));
+app.use(import_express13.default.static(import_path.default.join(__dirname, "../public/dashboard")));
 app.use((err, _req, res, next) => {
   if (err.statusCode) {
     res.status(err.statusCode).json({ error: { code: err.code || "ERROR", message: err.message } });
@@ -1176,7 +1232,7 @@ app.get("*", (req, res) => {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  const indexPath = path.join(__dirname, "../public/dashboard/index.html");
+  const indexPath = import_path.default.join(__dirname, "../public/dashboard/index.html");
   res.sendFile(indexPath, (err) => {
     if (err) res.status(404).end();
   });
@@ -1187,6 +1243,3 @@ if (process.env.NODE_ENV !== "test") {
   });
 }
 var index_default = app;
-export {
-  index_default as default
-};
