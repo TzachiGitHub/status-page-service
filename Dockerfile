@@ -30,6 +30,7 @@ COPY --from=builder /app/packages/server/dist ./dist
 COPY --from=builder /app/packages/server/prisma ./prisma
 COPY --from=builder /app/packages/server/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/server/node_modules ./node_modules
 
 # Frontend builds
 COPY --from=builder /app/packages/dashboard/dist ./public/dashboard
