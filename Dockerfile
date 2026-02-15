@@ -13,7 +13,7 @@ COPY packages/shared/ ./packages/shared/
 RUN cd packages/shared && npm run build
 
 COPY packages/server/ ./packages/server/
-RUN cd packages/server && npx prisma generate && npm run build
+RUN cd packages/server && npx prisma generate && npm run build && npx tsup prisma/seed.ts --format cjs --out-dir dist/seed --no-splitting
 
 COPY packages/dashboard/ ./packages/dashboard/
 RUN cd packages/dashboard && npm run build
@@ -36,6 +36,10 @@ COPY --from=builder /app/packages/server/node_modules ./node_modules
 COPY --from=builder /app/packages/dashboard/dist ./public/dashboard
 COPY --from=builder /app/packages/public-page/dist ./public/status-page
 
+# Entrypoint
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x entrypoint.sh
+
 ENV NODE_ENV=production
 EXPOSE 3030
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node dist/index.js"]
+CMD ["sh", "./entrypoint.sh"]
